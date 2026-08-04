@@ -54,5 +54,8 @@ assert.equal((await handleVote({ market_id: 'fx-btc-halving-fee', vote: 'up' }))
 const withVotes = await handleMatch({ url: 'https://x.pl/v', title: article, text: article });
 assert.ok(withVotes.votes && Number.isFinite(withVotes.votes.up), 'match zwraca liczniki głosów');
 
+// wykres: bez klucza feedu nie ma skąd go wziąć — pole jest, ale null (widget spada na paski)
+assert.equal(withVotes.match.chart_url, null, 'fixtures mode: chart_url null');
+
 console.log('ok');
 process.exit(0);

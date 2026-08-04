@@ -56,6 +56,17 @@ motyw niezależnie od ustawień systemu.
 Czytelnik może zamknąć widget krzyżykiem (nie wraca do końca sesji przeglądarki)
 i oddać głos 👍/👎 na zdarzenie — jeden głos na rynek, pamiętany w `localStorage`.
 
+## Wykres z Peruna
+
+Wykres kursów generuje sam Perun. Przy dopasowaniu matcher woła
+`GET /public/v1/widgets/market-chart?market_id=...` (z kluczem `PERUN_ACCESS_KEY`,
+cache 1 h) i przekazuje widgetowi zwrócony `widget_url` jako `chart_url` — keyless
+adres renderu (`/widgets/market-chart/render`), który Perun celowo wystawia jako
+osadzalny iframe (klucz feedu nigdy nie trafia do przeglądarki). Widget podmienia
+w URL-u parametr `theme`, żeby wykres pasował do motywu strony. Bez klucza
+(fixtures) albo gdy generator zawiedzie, `chart_url` jest `null` i widget
+pokazuje własne paski prawdopodobieństwa.
+
 ## Zliczanie głosów
 
 `POST /api/vote` z `{ market_id, vote: "up" | "down" }` podbija licznik; aktualne

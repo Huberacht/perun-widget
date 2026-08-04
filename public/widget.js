@@ -138,6 +138,12 @@
       align-items: center; gap: 10px; margin: 9px 2px;
     }
     .lbl { font-size: 12.5px; font-weight: 600; }
+    /* wykres renderuje Perun — iframe zamiast pasków, gdy feed dał chart_url */
+    .chart {
+      display: block; width: 100%; height: 180px; border: 0;
+      border-radius: 12px; background: ${t.track};
+    }
+    .banner .chart { height: 140px; }
     .track { height: 8px; border-radius: 4px; background: ${t.track}; overflow: hidden; }
     .fill { display: block; height: 100%; border-radius: 4px; }
     .yes .fill { background: ${YES}; }
@@ -269,6 +275,26 @@
         <span class="p">${pct(p)}</span>
       </div>`;
 
+    // Wykres generuje Perun — my tylko osadzamy jego render i dopasowujemy motyw.
+    // Gdy feed nie dał chart_url, zostają nasze paski prawdopodobieństwa.
+    const chartSrc = () => {
+      if (typeof match.chart_url !== 'string' || !/^https?:\/\//i.test(match.chart_url)) return '';
+      try {
+        const u = new URL(match.chart_url);
+        u.searchParams.set('theme', pageIsDark() ? 'dark' : 'light');
+        return u.href;
+      } catch {
+        return '';
+      }
+    };
+    const chart = chartSrc();
+    const odds = chart
+      ? `<iframe class="chart" src="${esc(chart)}" loading="lazy" scrolling="no"
+                 sandbox="allow-scripts allow-same-origin" title="Wykres kursów rynku"></iframe>`
+      : `
+        ${row('yes', match.outcome_1_label, match.probability_1)}
+        ${row('no', match.outcome_2_label, match.probability_2)}`;
+
     const pill = `
       <div class="pill" role="button" tabindex="0" aria-label="Pokaż zakład do tego artykułu">
         ${MARK}
@@ -288,10 +314,7 @@
           <button class="min" aria-label="Zwiń widget">${MINIMIZE}</button>
           <button class="close" aria-label="Zamknij widget">${CLOSE}</button>
         </div>
-        <div class="rows">
-          ${row('yes', match.outcome_1_label, match.probability_1)}
-          ${row('no', match.outcome_2_label, match.probability_2)}
-        </div>
+        <div class="rows">${odds}</div>
         ${voteBar}
         <div class="foot">
           <span>${esc([match.category, match.subcategory].filter(Boolean).join(' / '))}</span>
@@ -309,10 +332,7 @@
         <div class="b-body">
           <div>
             <div class="b-head">${MARK}<span class="b-q">${esc(match.event_name)}</span></div>
-            <div class="rows">
-              ${row('yes', match.outcome_1_label, match.probability_1)}
-              ${row('no', match.outcome_2_label, match.probability_2)}
-            </div>
+            <div class="rows">${odds}</div>
           </div>
           <div>${voteBar}</div>
         </div>

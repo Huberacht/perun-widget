@@ -201,6 +201,36 @@ export async function handleVote(body) {
   return { votes: await addVote(marketId, dir) };
 }
 
+// --- wykres Peruna ---
+// Perun generuje wykres rynku sam: /public/v1/widgets/market-chart (z kluczem)
+// zwraca widget_url — publiczny, osadzalny render iframe'a. Klucz feedu zostaje
+// po stronie serwera; do przeglądarki idzie tylko keyless URL renderu.
+const chartCache = new Map(); // market_id -> { url, expires }
+const CHART_TTL = 3600 * 1000;
+
+export async function getChartUrl(marketId) {
+  if (!ACCESS_KEY) return null; // fixtures — nie ma prawdziwego feedu, nie ma wykresu
+  const hit = chartCache.get(marketId);
+  if (hit && hit.expires > Date.now()) return hit.url;
+  let url = null;
+  try {
+    const u = new URL('/public/v1/widgets/market-chart', FEED_URL);
+    u.searchParams.set('market_id', marketId);
+    const res = await fetch(u, {
+      headers: { 'X-API-Key': ACCESS_KEY },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) throw new Error(`chart HTTP ${res.status}`);
+    const { widget_url } = await res.json();
+    if (typeof widget_url === 'string' && /^https?:\/\//i.test(widget_url)) url = widget_url;
+  } catch (err) {
+    console.warn('chart url fetch failed:', err?.message ?? err);
+    return null; // błąd nie trafia do cache — następne wejście spróbuje znowu
+  }
+  chartCache.set(marketId, { url, expires: Date.now() + CHART_TTL });
+  return url;
+}
+
 // rynek zdatny do pokazania: bramka + kompletne liczby
 const usable = (m) =>
   allowBet(m) && Number.isFinite(m.probability_1) && Number.isFinite(m.probability_2);
@@ -261,7 +291,15 @@ export async function handleMatch(body) {
     matchCache.delete(url); // rynek zniknął/zablokowany — następne wejście dobierze nowy
     return { match: null };
   }
-  return { match: publicFields(live), matcher: entry.matcher, votes: await getVotes(live.market_id) };
+  const [votes, chartUrl] = await Promise.all([
+    getVotes(live.market_id),
+    getChartUrl(live.market_id),
+  ]);
+  return {
+    match: { ...publicFields(live), chart_url: chartUrl },
+    matcher: entry.matcher,
+    votes,
+  };
 }
 
 // --- http ---
