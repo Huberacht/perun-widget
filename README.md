@@ -29,9 +29,29 @@ i pokazuje zwiniętą pastylkę w prawym dolnym rogu. Opcjonalne atrybuty:
 | Atrybut | Działanie |
 | --- | --- |
 | `data-endpoint` | Adres matchera (domyślnie origin skryptu) |
-| `data-position` | `right` (domyślnie) albo `left` |
+| `data-mode` | `float` (domyślnie) — launcher w rogu; `banner` — baner in-content |
+| `data-position` | `right` (domyślnie) albo `left` — tylko dla `float` |
+| `data-after-paragraph` | Po którym akapicie wstawić baner (domyślnie `2`) — tylko dla `banner` |
+| `data-container` | Selektor CSS na kontener banera (zamiast liczenia akapitów) |
+| `data-theme` | `dark`/`light` — wymusza wariant; domyślnie z tła strony |
 | `data-accent` | Kolor akcentu (domyślnie `#e8b93e`) |
 | `data-link-template` | Własny link CTA, np. `https://bukmacher.pl/bet/{market_id}` (domyślnie `provider_url` z feedu) |
+
+Dwa tryby prezentacji:
+
+- **`float`** — pływający launcher w rogu (styl czatowego widgetu): zwinięta pastylka
+  z pytaniem rynku i „Dowiedz się więcej", po kliknięciu panel z kursami.
+- **`banner`** — poziomy baner wstawiany między akapity artykułu, w miejscu,
+  w którym portale trzymają display-ady:
+
+```html
+<script async src="https://twoj-matcher.example.com/widget.js"
+        data-mode="banner" data-after-paragraph="2"></script>
+```
+
+Motyw (jasny/ciemny) widget bierze z faktycznego tła strony, a nie z samego
+`prefers-color-scheme` — dzięki temu pasuje też do portali, które trzymają jeden
+motyw niezależnie od ustawień systemu.
 
 Ręczne sterowanie (SPA, nietypowy layout):
 
