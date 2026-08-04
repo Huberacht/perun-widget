@@ -229,7 +229,9 @@ const CORS = {
   'Access-Control-Max-Age': '86400',
 };
 
-const server = http.createServer(async (req, res) => {
+// Eksportowany jako default — Vercel bierze server.js jako root entrypoint
+// i woła ten handler; lokalnie ten sam handler obsługuje http.createServer.
+export default async function requestHandler(req, res) {
   try {
     const { pathname } = new URL(req.url, 'http://x');
 
@@ -267,12 +269,12 @@ const server = http.createServer(async (req, res) => {
     console.error(err);
     res.writeHead(500, CORS).end(JSON.stringify({ error: 'internal' }));
   }
-});
+}
 
-// Nasłuchujemy zawsze — Vercel bierze server.js jako root entrypoint i oczekuje
-// serwera na $PORT. Tylko test.js wyłącza to przez PERUN_NO_LISTEN.
-if (!process.env.PERUN_NO_LISTEN) {
-  server.listen(PORT, () => {
+// Lokalnie potrzebny jest własny serwer; na Vercelu handler woła platforma,
+// a test.js importuje moduł i wyłącza nasłuch przez PERUN_NO_LISTEN.
+if (!process.env.VERCEL && !process.env.PERUN_NO_LISTEN) {
+  http.createServer(requestHandler).listen(PORT, () => {
     console.log(`perun-widget on http://localhost:${PORT} (feed: ${ACCESS_KEY ? FEED_URL : 'fixtures'})`);
   });
 }
