@@ -4,7 +4,7 @@
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 import Anthropic from '@anthropic-ai/sdk';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -269,10 +269,9 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-// Vercel bierze server.js jako root entrypoint i sam nie woła listen — stąd VERCEL.
-// Import z test.js nie spełnia żadnego z warunków, więc testy nie zajmują portu.
-const isEntrypoint = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
-if (isEntrypoint || process.env.VERCEL) {
+// Nasłuchujemy zawsze — Vercel bierze server.js jako root entrypoint i oczekuje
+// serwera na $PORT. Tylko test.js wyłącza to przez PERUN_NO_LISTEN.
+if (!process.env.PERUN_NO_LISTEN) {
   server.listen(PORT, () => {
     console.log(`perun-widget on http://localhost:${PORT} (feed: ${ACCESS_KEY ? FEED_URL : 'fixtures'})`);
   });

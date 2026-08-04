@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 
 delete process.env.PERUN_ACCESS_KEY; // test nigdy nie dotyka prawdziwego feedu
+process.env.PERUN_NO_LISTEN = '1'; // import serwera nie ma zajmować portu
 const { allowBet, lexicalMatch, getSnapshot, handleMatch } = await import('./server.js');
 
 const items = await getSnapshot();
