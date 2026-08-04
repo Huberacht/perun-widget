@@ -47,6 +47,9 @@
   // Sygnet Światowida jako maska CSS — jeden asset, kolor sterowany motywem.
   const GLYPH = 'data:image/png;base64,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';
 
+  const YES = '#3fa372';
+  const NO = '#d05a56';
+
   // Widget dopasowuje się do jasnego/ciemnego motywu strony (patrz pageIsDark).
   const THEME = {
     dark: {
@@ -91,9 +94,9 @@
 
     /* --- zwinięty: pastylka --- */
     .pill {
-      display: flex; align-items: center; gap: 12px;
-      padding: 11px 13px; border-radius: 20px; cursor: pointer;
-      width: min(360px, calc(100vw - 40px)); text-align: left;
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 11px 11px 13px; border-radius: 20px; cursor: pointer;
+      width: min(370px, calc(100vw - 40px)); text-align: left;
     }
     .pill-t { min-width: 0; flex: 1; }
     .pill-t b {
@@ -125,22 +128,22 @@
       color: ${t.muted}; transition: background .15s, color .15s;
     }
     .min:hover, .close:hover { background: ${t.hover}; color: ${t.fg}; }
-    /* w pastylce i banerze X siedzi w rogu, jak przy display-adzie */
-    .pill .close, .banner .close { position: absolute; top: 6px; ${POSITION === 'left' ? 'left' : 'right'}: 6px; width: 26px; height: 26px; }
-    .pill, .banner { position: relative; }
+    /* w banerze X siedzi w rogu, jak przy display-adzie; w pastylce obok chevronu */
+    .banner { position: relative; }
+    .banner .close { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; }
+    .pill .close { width: 28px; height: 28px; border-radius: 10px; margin-${POSITION === 'left' ? 'right' : 'left'}: -4px; }
     .rows { margin-top: 16px; }
     .row {
-      display: grid; grid-template-columns: minmax(44px, auto) 1fr 46px 58px;
+      display: grid; grid-template-columns: minmax(44px, auto) 1fr 46px;
       align-items: center; gap: 10px; margin: 9px 2px;
     }
     .lbl { font-size: 12.5px; font-weight: 600; }
     .track { height: 8px; border-radius: 4px; background: ${t.track}; overflow: hidden; }
     .fill { display: block; height: 100%; border-radius: 4px; }
-    .yes .fill { background: #3fa372; }
-    .no .fill { background: #d05a56; }
+    .yes .fill { background: ${YES}; }
+    .no .fill { background: ${NO}; }
     .p { font-size: 14px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
-    .odds { font-size: 11.5px; text-align: right; color: ${t.muted}; font-variant-numeric: tabular-nums; }
-    /* --- głosowanie 👍/👎 --- */
+    /* --- głosowanie 👍/👎 — kciuki w kolorach Tak/Nie z pasków wyżej --- */
     .vote { display: flex; align-items: center; gap: 8px; margin: 16px 0 10px; }
     .vote-q { font-size: 12px; color: ${t.muted}; margin-right: auto; }
     .vote button {
@@ -149,11 +152,16 @@
       font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums;
       transition: background .15s, border-color .15s, opacity .15s;
     }
-    .vote button:hover:not([disabled]) { background: ${t.hover}; }
     .vote button[disabled] { cursor: default; }
-    .vote button[aria-pressed="true"] { border-color: ${ACCENT}; background: ${ACCENT}22; }
-    .vote button[disabled]:not([aria-pressed="true"]) { opacity: .5; }
+    .vote button[disabled]:not([aria-pressed="true"]) { opacity: .45; }
+    .vote b { color: ${t.fg}; font-weight: 600; }
     .vote svg { display: block; }
+    .vote [data-vote="up"] { color: ${YES}; }
+    .vote [data-vote="down"] { color: ${NO}; }
+    .vote [data-vote="up"]:hover:not([disabled]) { border-color: ${YES}; background: ${YES}14; }
+    .vote [data-vote="down"]:hover:not([disabled]) { border-color: ${NO}; background: ${NO}14; }
+    .vote [data-vote="up"][aria-pressed="true"] { border-color: ${YES}; background: ${YES}26; }
+    .vote [data-vote="down"][aria-pressed="true"] { border-color: ${NO}; background: ${NO}26; }
     .foot {
       display: flex; justify-content: space-between; gap: 10px;
       font-size: 10.5px; color: ${t.muted}; padding: 0 2px;
@@ -175,7 +183,7 @@
     .b-body { display: grid; grid-template-columns: 1fr minmax(0, 236px); gap: 18px; align-items: center; }
     .b-head { display: flex; align-items: flex-start; gap: 12px; }
     .b-q { font-size: 15px; font-weight: 600; line-height: 1.38; letter-spacing: -.01em; padding-top: 3px; }
-    .banner .row { grid-template-columns: minmax(38px, auto) 1fr 44px 56px; margin: 7px 0; }
+    .banner .row { grid-template-columns: minmax(38px, auto) 1fr 44px; margin: 7px 0; }
     .banner .cta { margin: 0; }
     @media (max-width: 620px) {
       .b-body { grid-template-columns: 1fr; gap: 12px; }
@@ -246,20 +254,19 @@
     const voted = votedOn(match.market_id);
     const voteBar = `
       <div class="vote">
-        <span class="vote-q">${voted ? 'Dzięki za głos' : 'Jak myślisz?'}</span>
+        <span class="vote-q">Jak myślisz?</span>
         ${['up', 'down'].map((dir) => `
           <button data-vote="${dir}" aria-pressed="${voted === dir}" ${voted ? 'disabled' : ''}
                   aria-label="${dir === 'up' ? 'Tak, wydarzy się' : 'Nie, nie wydarzy się'}">
-            ${THUMB(dir === 'down')}${lastVotes[dir] ?? 0}
+            ${THUMB(dir === 'down')}<b>${lastVotes[dir] ?? 0}</b>
           </button>`).join('')}
       </div>`;
 
-    const row = (cls, label, p, rate) => `
+    const row = (cls, label, p) => `
       <div class="row ${cls}">
         <span class="lbl">${esc(label)}</span>
         <span class="track"><span class="fill" style="width:${Math.round(p * 100)}%"></span></span>
         <span class="p">${pct(p)}</span>
-        <span class="odds">kurs ${rate?.toFixed ? rate.toFixed(2) : esc(rate)}</span>
       </div>`;
 
     const pill = `
@@ -282,8 +289,8 @@
           <button class="close" aria-label="Zamknij widget">${CLOSE}</button>
         </div>
         <div class="rows">
-          ${row('yes', match.outcome_1_label, match.probability_1, match.rate_1)}
-          ${row('no', match.outcome_2_label, match.probability_2, match.rate_2)}
+          ${row('yes', match.outcome_1_label, match.probability_1)}
+          ${row('no', match.outcome_2_label, match.probability_2)}
         </div>
         ${voteBar}
         <div class="foot">
@@ -303,8 +310,8 @@
           <div>
             <div class="b-head">${MARK}<span class="b-q">${esc(match.event_name)}</span></div>
             <div class="rows">
-              ${row('yes', match.outcome_1_label, match.probability_1, match.rate_1)}
-              ${row('no', match.outcome_2_label, match.probability_2, match.rate_2)}
+              ${row('yes', match.outcome_1_label, match.probability_1)}
+              ${row('no', match.outcome_2_label, match.probability_2)}
             </div>
           </div>
           <div>${voteBar}</div>
