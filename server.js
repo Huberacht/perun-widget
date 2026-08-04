@@ -216,9 +216,10 @@ export async function handleMatch(body) {
 }
 
 // --- http ---
+// public/ jest też katalogiem statycznym Vercela — lokalnie serwujemy to samo
 const STATIC = {
-  '/': ['demo/index.html', 'text/html; charset=utf-8'],
-  '/widget.js': ['widget.js', 'application/javascript; charset=utf-8'],
+  '/': ['public/index.html', 'text/html; charset=utf-8'],
+  '/widget.js': ['public/widget.js', 'application/javascript; charset=utf-8'],
 };
 
 const CORS = {
