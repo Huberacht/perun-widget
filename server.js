@@ -152,6 +152,55 @@ const canonical = (u) => {
   }
 };
 
+// --- głosy 👍/👎 pod rynkiem ---
+// Redis REST (Vercel KV albo Upstash) gdy skonfigurowany, inaczej pamięć procesu.
+const KV_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL || '';
+const KV_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN || '';
+// ponytail: bez KV liczniki żyją tylko w tym procesie — na serverless znikają
+// między wywołaniami. Dopięcie KV_REST_API_URL/TOKEN wystarczy, kod się nie zmienia.
+const memVotes = new Map();
+const DIRECTIONS = ['up', 'down'];
+
+const kv = (...cmd) =>
+  fetch(`${KV_URL}/${cmd.map(encodeURIComponent).join('/')}`, {
+    headers: { Authorization: `Bearer ${KV_TOKEN}` },
+    signal: AbortSignal.timeout(3000),
+  }).then((r) => r.json());
+
+const voteKey = (id, dir) => `perun:votes:${id}:${dir}`;
+
+export async function getVotes(marketId) {
+  if (!KV_URL) return { ...{ up: 0, down: 0 }, ...memVotes.get(marketId) };
+  try {
+    const { result } = await kv('mget', voteKey(marketId, 'up'), voteKey(marketId, 'down'));
+    return { up: Number(result?.[0]) || 0, down: Number(result?.[1]) || 0 };
+  } catch (err) {
+    console.warn('getVotes failed:', err?.message ?? err);
+    return { up: 0, down: 0 };
+  }
+}
+
+export async function addVote(marketId, dir) {
+  if (!KV_URL) {
+    const tally = { up: 0, down: 0, ...memVotes.get(marketId) };
+    tally[dir] += 1;
+    memVotes.set(marketId, tally);
+    return tally;
+  }
+  await kv('incr', voteKey(marketId, dir));
+  return getVotes(marketId);
+}
+
+export async function handleVote(body) {
+  const dir = DIRECTIONS.includes(body?.vote) ? body.vote : null;
+  const marketId = String(body?.market_id ?? '').slice(0, 200);
+  if (!dir || !marketId) return { error: 'bad_request' };
+  // tylko rynki faktycznie serwowane przez widget — inaczej dowolny POST zapycha store
+  const items = await getSnapshot();
+  if (!items.some((m) => m.market_id === marketId && usable(m))) return { error: 'unknown_market' };
+  return { votes: await addVote(marketId, dir) };
+}
+
 // rynek zdatny do pokazania: bramka + kompletne liczby
 const usable = (m) =>
   allowBet(m) && Number.isFinite(m.probability_1) && Number.isFinite(m.probability_2);
@@ -212,7 +261,7 @@ export async function handleMatch(body) {
     matchCache.delete(url); // rynek zniknął/zablokowany — następne wejście dobierze nowy
     return { match: null };
   }
-  return { match: publicFields(live), matcher: entry.matcher };
+  return { match: publicFields(live), matcher: entry.matcher, votes: await getVotes(live.market_id) };
 }
 
 // --- http ---
@@ -235,7 +284,7 @@ export default async function requestHandler(req, res) {
   try {
     const { pathname } = new URL(req.url, 'http://x');
 
-    if (pathname === '/api/match') {
+    if (pathname === '/api/match' || pathname === '/api/vote') {
       if (req.method === 'OPTIONS') return res.writeHead(204, CORS).end();
       if (req.method !== 'POST') {
         return res.writeHead(405, CORS).end();
@@ -252,8 +301,8 @@ export default async function requestHandler(req, res) {
       } catch {
         return res.writeHead(400, CORS).end(JSON.stringify({ error: 'bad_json' }));
       }
-      const result = await handleMatch(body);
-      res.writeHead(200, { ...CORS, 'Content-Type': 'application/json' });
+      const result = pathname === '/api/vote' ? await handleVote(body) : await handleMatch(body);
+      res.writeHead(result.error ? 400 : 200, { ...CORS, 'Content-Type': 'application/json' });
       return res.end(JSON.stringify(result));
     }
 

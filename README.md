@@ -53,6 +53,27 @@ Motyw (jasny/ciemny) widget bierze z faktycznego tła strony, a nie z samego
 `prefers-color-scheme` — dzięki temu pasuje też do portali, które trzymają jeden
 motyw niezależnie od ustawień systemu.
 
+Czytelnik może zamknąć widget krzyżykiem (nie wraca do końca sesji przeglądarki)
+i oddać głos 👍/👎 na zdarzenie — jeden głos na rynek, pamiętany w `localStorage`.
+
+## Zliczanie głosów
+
+`POST /api/vote` z `{ market_id, vote: "up" | "down" }` podbija licznik; aktualne
+liczby wracają razem z dopasowaniem w `/api/match`. Przyjmowane są tylko rynki,
+które widget faktycznie serwuje (ta sama bramka co przy dopasowaniu).
+
+Bez konfiguracji liczniki żyją w pamięci procesu — wystarczy do dema, ale na
+serverless znikają między wywołaniami. Trwałe zliczanie włącza samo ustawienie
+zmiennych Redis REST (Vercel KV albo Upstash), kod się nie zmienia:
+
+```bash
+vercel env add KV_REST_API_URL
+vercel env add KV_REST_API_TOKEN
+```
+
+Obsługiwane są też nazwy `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`.
+Klucze mają postać `perun:votes:<market_id>:up|down`.
+
 Ręczne sterowanie (SPA, nietypowy layout):
 
 ```js

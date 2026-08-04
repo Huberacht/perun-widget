@@ -119,12 +119,15 @@
       flex: 1; min-width: 0; font-size: 15.5px; font-weight: 600;
       line-height: 1.4; letter-spacing: -.01em; padding-top: 2px;
     }
-    .min {
+    .min, .close {
       flex: none; width: 32px; height: 32px; border-radius: 11px;
       display: flex; align-items: center; justify-content: center;
-      color: ${t.muted}; transition: background .15s;
+      color: ${t.muted}; transition: background .15s, color .15s;
     }
-    .min:hover { background: ${t.hover}; }
+    .min:hover, .close:hover { background: ${t.hover}; color: ${t.fg}; }
+    /* w pastylce i banerze X siedzi w rogu, jak przy display-adzie */
+    .pill .close, .banner .close { position: absolute; top: 6px; ${POSITION === 'left' ? 'left' : 'right'}: 6px; width: 26px; height: 26px; }
+    .pill, .banner { position: relative; }
     .rows { margin-top: 16px; }
     .row {
       display: grid; grid-template-columns: minmax(44px, auto) 1fr 46px 58px;
@@ -137,12 +140,20 @@
     .no .fill { background: #d05a56; }
     .p { font-size: 14px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
     .odds { font-size: 11.5px; text-align: right; color: ${t.muted}; font-variant-numeric: tabular-nums; }
-    .cta {
-      display: block; text-align: center; margin: 16px 0 10px; padding: 12px 14px;
-      border-radius: 15px; background: ${ACCENT}; color: #090a0a; text-decoration: none;
-      font-size: 13.5px; font-weight: 600; transition: opacity .15s;
+    /* --- głosowanie 👍/👎 --- */
+    .vote { display: flex; align-items: center; gap: 8px; margin: 16px 0 10px; }
+    .vote-q { font-size: 12px; color: ${t.muted}; margin-right: auto; }
+    .vote button {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 9px 13px; border-radius: 13px; border: 1px solid ${t.line};
+      font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums;
+      transition: background .15s, border-color .15s, opacity .15s;
     }
-    .cta:hover { opacity: .88; }
+    .vote button:hover:not([disabled]) { background: ${t.hover}; }
+    .vote button[disabled] { cursor: default; }
+    .vote button[aria-pressed="true"] { border-color: ${ACCENT}; background: ${ACCENT}22; }
+    .vote button[disabled]:not([aria-pressed="true"]) { opacity: .5; }
+    .vote svg { display: block; }
     .foot {
       display: flex; justify-content: space-between; gap: 10px;
       font-size: 10.5px; color: ${t.muted}; padding: 0 2px;
@@ -159,7 +170,7 @@
     .b-top {
       display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
       font-size: 9.5px; letter-spacing: .09em; text-transform: uppercase;
-      color: ${t.muted}; margin-bottom: 12px;
+      color: ${t.muted}; margin-bottom: 12px; padding-right: 26px; /* miejsce na X */
     }
     .b-body { display: grid; grid-template-columns: 1fr minmax(0, 236px); gap: 18px; align-items: center; }
     .b-head { display: flex; align-items: flex-start; gap: 12px; }
@@ -174,6 +185,9 @@
   const CHEVRON_UP = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 15-6-6-6 6"/></svg>`;
   const MINIMIZE = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>`;
   const MARK = `<span class="mark"><i></i></span>`;
+  const CLOSE = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>`;
+  const THUMB = (down) =>
+    `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"${down ? ' style="transform:rotate(180deg)"' : ''}><path d="M7 10v11H4a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1h3Z"/><path d="M7 10l4.2-7.1a1 1 0 0 1 1.8.3l.4 1.6a4 4 0 0 1-.2 2.6L12.5 9H19a2 2 0 0 1 2 2.4l-1.4 7A2 2 0 0 1 17.6 20H7"/></svg>`;
 
   // Motyw bierzemy z faktycznego tła strony (a nie z samego prefers-color-scheme),
   // żeby widget pasował też do stron trzymających jeden motyw niezależnie od systemu.
@@ -191,6 +205,36 @@
 
   let expanded = false; // stan przeżywa 60-sekundowe odświeżenia kursów
   let lastMatch = null;
+  let lastVotes = { up: 0, down: 0 };
+  let timer = null;
+
+  // zamknięcie trzyma się do końca sesji, głos — na stałe (jeden na rynek)
+  const CLOSED_KEY = 'perun-widget-closed';
+  const votedOn = (id) => {
+    try { return localStorage.getItem(`perun-vote:${id}`); } catch { return null; }
+  };
+
+  function close() {
+    clearInterval(timer);
+    document.querySelectorAll('[data-perun-widget-root]').forEach((el) => el.remove());
+    try { sessionStorage.setItem(CLOSED_KEY, '1'); } catch { /* prywatny tryb — trudno */ }
+  }
+
+  async function vote(marketId, dir) {
+    try { localStorage.setItem(`perun-vote:${marketId}`, dir); } catch { /* j.w. */ }
+    lastVotes = { ...lastVotes, [dir]: (lastVotes[dir] ?? 0) + 1 }; // od razu, bez czekania na sieć
+    render(lastMatch);
+    try {
+      const res = await fetch(`${ENDPOINT}/api/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ market_id: marketId, vote: dir }),
+        signal: AbortSignal.timeout(8000),
+      });
+      const { votes } = await res.json();
+      if (votes) { lastVotes = votes; render(lastMatch); }
+    } catch { /* głos poszedł w eter — licznik lokalny i tak już podbity */ }
+  }
 
   function render(match) {
     lastMatch = match;
@@ -199,10 +243,16 @@
     host.setAttribute('data-perun-widget-root', '');
     const shadow = host.attachShadow({ mode: 'open' });
 
-    const rawLink = LINK_TEMPLATE
-      ? LINK_TEMPLATE.replace('{market_id}', encodeURIComponent(match.market_id))
-      : match.provider_url;
-    const link = rawLink && /^https?:\/\//i.test(rawLink) ? rawLink : ''; // tylko http(s)
+    const voted = votedOn(match.market_id);
+    const voteBar = `
+      <div class="vote">
+        <span class="vote-q">${voted ? 'Dzięki za głos' : 'Jak myślisz?'}</span>
+        ${['up', 'down'].map((dir) => `
+          <button data-vote="${dir}" aria-pressed="${voted === dir}" ${voted ? 'disabled' : ''}
+                  aria-label="${dir === 'up' ? 'Tak, wydarzy się' : 'Nie, nie wydarzy się'}">
+            ${THUMB(dir === 'down')}${lastVotes[dir] ?? 0}
+          </button>`).join('')}
+      </div>`;
 
     const row = (cls, label, p, rate) => `
       <div class="row ${cls}">
@@ -220,6 +270,7 @@
           <span>Dowiedz się więcej</span>
         </span>
         <span class="expand">${CHEVRON_UP}</span>
+        <button class="close" aria-label="Zamknij widget">${CLOSE}</button>
       </div>`;
 
     const panel = `
@@ -228,24 +279,22 @@
           ${MARK}
           <span class="q">${esc(match.event_name)}</span>
           <button class="min" aria-label="Zwiń widget">${MINIMIZE}</button>
+          <button class="close" aria-label="Zamknij widget">${CLOSE}</button>
         </div>
         <div class="rows">
           ${row('yes', match.outcome_1_label, match.probability_1, match.rate_1)}
           ${row('no', match.outcome_2_label, match.probability_2, match.rate_2)}
         </div>
-        ${link ? `<a class="cta" href="${esc(link)}" target="_blank" rel="noopener noreferrer nofollow sponsored">Postaw na to zdarzenie →</a>` : ''}
+        ${voteBar}
         <div class="foot">
           <span>${esc([match.category, match.subcategory].filter(Boolean).join(' / '))}</span>
           <a class="src" href="https://swiatowid.com" target="_blank" rel="noopener noreferrer">Źródło: Światowid.com</a>
         </div>
       </div>`;
 
-    const cta = link
-      ? `<a class="cta" href="${esc(link)}" target="_blank" rel="noopener noreferrer nofollow sponsored">Postaw na to zdarzenie →</a>`
-      : '';
-
     const banner = `
       <div class="banner">
+        <button class="close" aria-label="Zamknij">${CLOSE}</button>
         <div class="b-top">
           <span>Sponsorowane · rynki predykcyjne</span>
           <a class="src" href="https://swiatowid.com" target="_blank" rel="noopener noreferrer">Źródło: Światowid.com</a>
@@ -258,7 +307,7 @@
               ${row('no', match.outcome_2_label, match.probability_2, match.rate_2)}
             </div>
           </div>
-          <div>${cta}</div>
+          <div>${voteBar}</div>
         </div>
       </div>`;
 
@@ -273,6 +322,16 @@
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(true); }
     });
     shadow.querySelector('.min')?.addEventListener('click', () => toggle(false));
+    shadow.querySelector('.close')?.addEventListener('click', (e) => {
+      e.stopPropagation(); // X w pastylce nie ma jej najpierw rozwijać
+      close();
+    });
+    shadow.querySelectorAll('[data-vote]').forEach((btn) =>
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!votedOn(match.market_id)) vote(match.market_id, btn.dataset.vote);
+      }),
+    );
 
     mount(host);
     return host;
@@ -299,7 +358,8 @@
         signal: AbortSignal.timeout(10_000),
       });
       if (!res.ok) return;
-      const { match } = await res.json();
+      const { match, votes } = await res.json();
+      if (votes) lastVotes = votes;
       if (match) render(match);
     } catch {
       /* brak dopasowania lub błąd sieci — widget po prostu się nie pokazuje */
@@ -317,9 +377,10 @@
 
   // start + odświeżanie kursów co 60 s (kursy mają być świeże)
   const start = () => {
+    try { if (sessionStorage.getItem(CLOSED_KEY)) return; } catch { /* brak storage — pokazujemy */ }
     const article = extract();
     run(article);
-    setInterval(() => run(article), 60_000);
+    timer = setInterval(() => run(article), 60_000);
   };
 
   if (document.readyState === 'loading') {

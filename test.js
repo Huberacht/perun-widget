@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 delete process.env.PERUN_ACCESS_KEY; // test nigdy nie dotyka prawdziwego feedu
 process.env.PERUN_NO_LISTEN = '1'; // import serwera nie ma zajmować portu
-const { allowBet, lexicalMatch, getSnapshot, handleMatch } = await import('./server.js');
+const { allowBet, lexicalMatch, getSnapshot, handleMatch, handleVote } = await import('./server.js');
 
 const items = await getSnapshot();
 assert.ok(items.length >= 10, 'fixtures loaded');
@@ -40,6 +40,19 @@ const a = await handleMatch({ url: 'https://x.pl/?p=1', title: article, text: ar
 assert.equal(a.match?.market_id, 'fx-btc-200k-2026', 'query-string article matches BTC');
 const b = await handleMatch({ url: 'https://x.pl/?p=2', title: cake, text: cake });
 assert.equal(b.match, null, 'different ?p= article is not served the cached BTC match');
+
+// głosy: liczą się, tylko dla rynków faktycznie serwowanych i tylko up/down
+const voteMarket = bettable[0].market_id;
+assert.deepEqual((await handleVote({ market_id: voteMarket, vote: 'up' })).votes, { up: 1, down: 0 });
+assert.deepEqual((await handleVote({ market_id: voteMarket, vote: 'up' })).votes, { up: 2, down: 0 });
+assert.deepEqual((await handleVote({ market_id: voteMarket, vote: 'down' })).votes, { up: 2, down: 1 });
+assert.equal((await handleVote({ market_id: voteMarket, vote: 'maybe' })).error, 'bad_request');
+assert.equal((await handleVote({ market_id: 'nie-ma-takiego', vote: 'up' })).error, 'unknown_market');
+// rynek za bramką (block_bet) też nie przyjmuje głosów
+assert.equal((await handleVote({ market_id: 'fx-btc-halving-fee', vote: 'up' })).error, 'unknown_market');
+// i wracają razem z dopasowaniem
+const withVotes = await handleMatch({ url: 'https://x.pl/v', title: article, text: article });
+assert.ok(withVotes.votes && Number.isFinite(withVotes.votes.up), 'match zwraca liczniki głosów');
 
 console.log('ok');
 process.exit(0);
