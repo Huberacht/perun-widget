@@ -269,7 +269,10 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Vercel bierze server.js jako root entrypoint i sam nie woła listen — stąd VERCEL.
+// Import z test.js nie spełnia żadnego z warunków, więc testy nie zajmują portu.
+const isEntrypoint = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isEntrypoint || process.env.VERCEL) {
   server.listen(PORT, () => {
     console.log(`perun-widget on http://localhost:${PORT} (feed: ${ACCESS_KEY ? FEED_URL : 'fixtures'})`);
   });
